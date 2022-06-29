@@ -1,3 +1,5 @@
+from typing import Optional
+
 from flink_rest_client.common import _execute_rest_request, RestException
 
 
@@ -737,7 +739,8 @@ class JobsClient:
         )["triggerid"]
         return JobTrigger(self.prefix, "rescaling", job_id, trigger_id)
 
-    def create_savepoint(self, job_id, target_directory, cancel_job=False):
+    def create_savepoint(self, job_id: str, target_directory: Optional[str] = None,
+                         cancel_job: Optional[bool] = False) -> JobTrigger:
         """
         Triggers a savepoint, and optionally cancels the job afterwards. This async operation would return a
         JobTrigger for further query identifier.
@@ -753,7 +756,7 @@ class JobsClient:
         ----------
         job_id: str
             32-character hexadecimal string value that identifies a job.
-        target_directory: str
+        target_directory: Optional[str]
             Savepoint target directory.
         cancel_job: bool
             If it is True, it also stops the job after the savepoint creation.
@@ -763,11 +766,15 @@ class JobsClient:
         JobTrigger
             Object that can be used to query the status of savepoint.
         """
+        json_data = {"cancel-job": cancel_job}
+        if target_directory:
+            json_data["target-directory"] = target_directory
+
         trigger_id = _execute_rest_request(
             url=f"{self.prefix}/{job_id}/savepoints",
             http_method="POST",
             accepted_status_code=202,
-            json={"cancel-job": cancel_job, "target-directory": target_directory},
+            json=json_data,
         )["request-id"]
         return JobTrigger(self.prefix, "savepoints", job_id, trigger_id)
 
